@@ -20,6 +20,10 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true,
 });
 
+// Use node-fetch in CommonJS (v3+) with dynamic import
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
 async function sendWhatsAppReminders() {
   const now = new Date();
   const in15 = new Date(now.getTime() + 15 * 60000);
@@ -39,7 +43,83 @@ async function sendWhatsAppReminders() {
 
     // Find the employee by name
     const employee = await Employee.findOne({ name: nextConv.employeeName });
-    const toNumber = `whatsapp:${normalizePhone(employee.phone)}`;
+    //const toNumber = `whatsapp:${normalizePhone(employee.phone)}`;
+    const toEmail = `whatsapp:${normalizePhone(employee.email)}`;
+
+    // Send email using Azure Communication Services with external HTML template
+    try {
+      const { EmailClient } = require("@azure/communication-email");
+      const fs = require("fs");
+      const path = require("path");
+      const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
+      if (!connectionString) {
+        throw new Error("AZURE_COMMUNICATION_CONNECTION_STRING is not set in environment variables.");
+      }
+      const emailClient = new EmailClient(connectionString);
+
+      // Read and fill the HTML template
+      const templatePath = path.join(__dirname, "emailTemplate.html");
+      let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+      htmlTemplate = htmlTemplate
+        .replace(/{{candidateName}}/g, candidate.name)
+        .replace(/{{candidatePhone}}/g, candidate.phone)
+        .replace(/{{followUpDate}}/g, new Date(nextConv.date).toLocaleString());
+
+      const emailMessage = {
+        senderAddress:
+          "DoNotReply@5086a98d-0c75-4bc7-8628-2e2cf90dca53.azurecomm.net",
+        content: {
+          subject: "Alert: Follow Up",
+          plainText: `Alert: Follow-up call with ${candidate.name} (${
+            candidate.phone
+          }) is scheduled on ${new Date(
+            nextConv.date
+          ).toLocaleString()}. Please take appropriate action.\n\nTeam ASR Excellix`,
+          html: htmlTemplate,
+        },
+        recipients: {
+          to: [{ address: employee.email }],
+        },
+      };
+
+      const poller = await emailClient.beginSend(emailMessage);
+      const result = await poller.pollUntilDone();
+      if (result.status === "Succeeded") {
+        console.log(
+          `Email sent to ${employee.email} for follow-up at ${nextConv.date}`
+        );
+      } else {
+        console.error(
+          `Failed to send email to ${employee.email}:`,
+          result.error
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Error sending email via Azure Communication Services:",
+        err
+      );
+    }
+    // Send WhatsApp message via bulkwhatsapp.net API (outside email try/catch)
+    try {
+      const employeeMobile = employee.phone.replace(/^\+?91/, ""); // Remove +91 if present
+      const followUpMsg = encodeURIComponent(
+        `Alert: Follow-up call with ${candidate.name} (${
+          candidate.phone
+        }) is scheduled on ${new Date(
+          nextConv.date
+        ).toLocaleString()}. Please take appropriate action.\n\nTeam ASR Excellix`
+      );
+      const apiUrl = `https://api.bulkwhatsapp.net/wapp/api/send?apikey=e1b31e8d433c42eebe3d9229a911e981&mobile=91${employeeMobile}&msg=${followUpMsg}`;
+      const resp = await fetch(apiUrl);
+      const respText = await resp.text();
+      console.log(`WhatsApp API response for ${employee.phone}:`, respText);
+    } catch (werr) {
+      console.error(
+        "Error sending WhatsApp message via bulkwhatsapp.net:",
+        werr
+      );
+    }
     // Optionally, still send to candidate as before
     // await client.messages.create({
     //   messagingServiceSid: "MGd6c4f9dcd0135ff259615c0e9c19dae3",
@@ -52,32 +132,32 @@ async function sendWhatsAppReminders() {
     //   to: toNumber,
     // });
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const client = require("twilio")(accountSid, authToken);
+    // const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    // const authToken = process.env.TWILIO_AUTH_TOKEN;
+    // const client = require("twilio")(accountSid, authToken);
 
-    client.messages
-      .create({
-        from: "whatsapp:+14155238886",
-        contentSid: process.env.TWILIO_CONTENT_SID2,
-        //contentVariables: '{"1":"12/1","2":"3pm"}',
-        contentVariables: JSON.stringify({
-          1: ` ${candidate.name}`,
-          2: `${candidate.phone}`,
-          3: new Date(nextConv.date).toLocaleString(),
-        }),
-        to: "whatsapp:+919616647311",
-      })
-      .then((message) => console.log(message.sid));
+    // client.messages
+    //   .create({
+    //     from: "whatsapp:+14155238886",
+    //     contentSid: process.env.TWILIO_CONTENT_SID2,
+    //     //contentVariables: '{"1":"12/1","2":"3pm"}',
+    //     contentVariables: JSON.stringify({
+    //       1: ` ${candidate.name}`,
+    //       2: `${candidate.phone}`,
+    //       3: new Date(nextConv.date).toLocaleString(),
+    //     }),
+    //     to: "whatsapp:+919616647311",
+    //   })
+    //   .then((message) => console.log(message.sid));
 
-    console.log(
-      `WhatsApp sent to ${candidate.name}, ${employee.phone} for follow-up at ${nextConv.date}`
-    );
+    // console.log(
+    //   `WhatsApp sent to ${candidate.name}, ${employee.phone} for follow-up at ${nextConv.date}`
+    // );
   }
 }
 
 module.exports = function startFollowupScheduler() {
   // Run every 15 minutes
   sendWhatsAppReminders();
-  setInterval(sendWhatsAppReminders, 15 * 60 * 1000);
+  // setInterval(sendWhatsAppReminders, 15 * 60 * 1000);
 };

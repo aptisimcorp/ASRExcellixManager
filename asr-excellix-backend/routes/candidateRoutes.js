@@ -2,6 +2,22 @@ const express = require("express");
 const router = express.Router();
 const Candidate = require("../models/Candidate");
 
+// ✅ Mark Candidate as Complete/Closed
+router.patch("/:id/complete", async (req, res) => {
+  try {
+    const candidate = await Candidate.findByIdAndUpdate(
+      req.params.id,
+      { completed: true },
+      { new: true }
+    );
+    if (!candidate)
+      return res.status(404).json({ error: "Candidate not found" });
+    res.json(candidate);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ➕ Create Candidate
 router.post("/", async (req, res) => {
   try {
