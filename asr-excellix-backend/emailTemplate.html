@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Alert: Follow Up</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        padding: 0;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: #ffffff;
+        border: 1px solid #dddddd;
+        padding: 20px;
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+      }
+      .logo {
+        max-width: 150px;
+      }
+      .content {
+        font-size: 16px;
+        color: #333333;
+        line-height: 1.5;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #888888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img
+          src="https://asrexcellix.com/logo.png"
+          alt="ASR Excellix"
+          class="logo"
+        />
+      </div>
+      <div class="content">
+        <h2 style="color: #d9534f">🔔 Alert: Follow-Up</h2>
+        <p>
+          A follow-up call with <strong>{{candidateName}}</strong> (<a
+            href="tel:{{candidatePhone}}"
+            >{{candidatePhone}}</a
+          >) is scheduled on <strong>{{followUpDate}}</strong>.
+        </p>
+        <p>Please take appropriate action.</p>
+        <p>– Team ASR Excellix</p>
+      </div>
+      <div class="footer">This is an automated message from ASR Excellix.</div>
+    </div>
+  </body>
+</html>

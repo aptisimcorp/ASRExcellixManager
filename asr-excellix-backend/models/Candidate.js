@@ -17,6 +17,7 @@ const candidateSchema = new mongoose.Schema({
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   conversationHistory: [conversationSchema],
+  completed: { type: Boolean, default: false }, // true if candidate is marked complete/closed
 });
 
 module.exports = mongoose.model("Candidate", candidateSchema);
