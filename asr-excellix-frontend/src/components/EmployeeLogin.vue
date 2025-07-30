@@ -80,6 +80,7 @@
 <script>
 import axios from "axios";
 import { setLoggedIn } from "../auth.js";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 export default {
   name: "EmployeeLogin",
   data() {
@@ -100,7 +101,7 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const res = await axios.post("/api/employees/login", {
+        const res = await axios.post(`${API_BASE}/login`, {
           email: this.email,
           password: this.password,
         });
@@ -119,7 +120,7 @@ export default {
       this.forgotSuccess = false;
       this.forgotLoading = true;
       try {
-        await axios.post("/api/employees/forgot-password", {
+        await axios.post(`${API_BASE}/forgot-password`, {
           email: this.forgotEmail,
         });
         this.forgotMsg = "Password reset email sent. Please check your inbox.";
