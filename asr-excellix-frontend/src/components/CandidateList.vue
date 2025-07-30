@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import AddCandidate from "./AddCandidate.vue";
 import EditCandidate from "./EditCandidate.vue";
 import CandidateActionModal from "./CandidateActionModal.vue";
 import ExportToExcel from "./ExportToExcel.vue";
+import { isLoading } from "../loading.js";
 
 const candidates = ref([]);
 const filterStatus = ref("active");
@@ -15,20 +16,30 @@ const showActionModal = ref(false);
 const actionCandidate = ref(null);
 
 const fetchCandidates = async () => {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/candidates`);
-  candidates.value = await res.json();
-  editingId.value = null;
-  editingCandidate.value = null;
+  isLoading.value = true;
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/candidates`);
+    candidates.value = await res.json();
+    editingId.value = null;
+    editingCandidate.value = null;
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const markComplete = async (id) => {
-  await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}/candidates/${id}/complete`,
-    {
-      method: "PATCH",
-    }
-  );
-  fetchCandidates();
+  isLoading.value = true;
+  try {
+    await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/candidates/${id}/complete`,
+      {
+        method: "PATCH",
+      }
+    );
+    await fetchCandidates();
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const filteredCandidates = computed(() => {
@@ -47,6 +58,30 @@ const filteredCandidates = computed(() => {
   return filtered
     .slice()
     .sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
+});
+
+// Pagination state
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredCandidates.value.length / pageSize.value) || 1;
+});
+
+const pagedCandidates = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredCandidates.value.slice(start, start + pageSize.value);
+});
+
+const goToPage = (page) => {
+  if (page < 1) page = 1;
+  if (page > totalPages.value) page = totalPages.value;
+  currentPage.value = page;
+};
+
+// Reset to first page when filters change
+watch([filterStatus, nameFilter, candidates], () => {
+  currentPage.value = 1;
 });
 
 const startEdit = (candidate) => {
@@ -75,21 +110,32 @@ onMounted(fetchCandidates);
 <template>
   <div class="container mt-4">
     <h2 class="mb-4">Candidates</h2>
-    <div class="d-flex mb-3 align-items-center gap-2">
-      <button class="btn btn-primary" @click="showAdd = !showAdd">
-        {{ showAdd ? "Close" : "Add New Candidate" }}
-      </button>
-      <ExportToExcel :data="filteredCandidates" />
-      <select v-model="filterStatus" class="form-select w-auto ms-2">
-        <option value="active">Active</option>
-        <option value="closed">Closed</option>
-        <option value="all">All</option>
-      </select>
-      <input
-        v-model="nameFilter"
-        class="form-control w-auto ms-2"
-        placeholder="Filter by name..."
-      />
+    <div class="d-flex mb-3 align-items-center gap-2 justify-content-between">
+      <div class="text-start">
+        <button class="btn btn-primary" @click="showAdd = !showAdd">
+          {{ showAdd ? "Close" : "Add New Candidate" }}
+        </button>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <!-- <ExportToExcel :data="filteredCandidates" /> -->
+        <!-- <select v-model="filterStatus" class="form-select w-auto ms-2">
+          <option value="active">Active</option>
+          <option value="closed">Closed</option>
+          <option value="all">All</option>
+        </select> -->
+        <input
+          v-model="nameFilter"
+          class="form-control w-auto ms-2"
+          placeholder="Filter by name..."
+        />
+        <select v-model="pageSize" class="form-select w-auto ms-2">
+          <option :value="10">10</option>
+          <option :value="25">25</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+        <span class="ms-2">per page</span>
+      </div>
     </div>
     <AddCandidate v-if="showAdd" @added="fetchCandidates" />
     <table class="table table-bordered table-striped">
@@ -105,7 +151,7 @@ onMounted(fetchCandidates);
       </thead>
       <tbody>
         <tr
-          v-for="c in filteredCandidates"
+          v-for="c in pagedCandidates"
           :key="c._id"
           :class="{ 'table-success': c.completed }"
         >
@@ -135,6 +181,7 @@ onMounted(fetchCandidates);
             >
               Action
             </button>
+            <!--
             <button
               v-if="!c.completed"
               class="btn btn-sm btn-success"
@@ -142,10 +189,56 @@ onMounted(fetchCandidates);
             >
               Mark Complete
             </button>
+            -->
           </td>
         </tr>
       </tbody>
     </table>
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div>
+        Showing
+        <b>{{ (currentPage - 1) * pageSize + 1 }}</b>
+        -
+        <b>{{ Math.min(currentPage * pageSize, filteredCandidates.length) }}</b>
+        of <b>{{ filteredCandidates.length }}</b> candidates
+      </div>
+      <nav>
+        <ul class="pagination mb-0">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button
+              class="page-link"
+              @click="goToPage(currentPage - 1)"
+              :disabled="currentPage === 1"
+            >
+              Prev
+            </button>
+          </li>
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            class="page-item"
+            :class="{ active: currentPage === page }"
+          >
+            <button class="page-link" @click="goToPage(page)">
+              {{ page }}
+            </button>
+          </li>
+          <li
+            class="page-item"
+            :class="{ disabled: currentPage === totalPages }"
+          >
+            <button
+              class="page-link"
+              @click="goToPage(currentPage + 1)"
+              :disabled="currentPage === totalPages"
+            >
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
     <CandidateActionModal
       v-if="showActionModal"
       :candidate="actionCandidate"

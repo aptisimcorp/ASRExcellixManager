@@ -37,7 +37,7 @@ async function sendWhatsAppReminders() {
 
   for (const candidate of candidates) {
     const nextConv = candidate.conversationHistory.find(
-      (c) => c.date >= now && c.date <= in15
+      (c) => c.date >= now && c.date <= in15 && !c.FollowUpSent
     );
     if (!nextConv) continue;
 
@@ -46,14 +46,18 @@ async function sendWhatsAppReminders() {
     //const toNumber = `whatsapp:${normalizePhone(employee.phone)}`;
     const toEmail = `whatsapp:${normalizePhone(employee.email)}`;
 
+    let followupSent = false;
     // Send email using Azure Communication Services with external HTML template
     try {
       const { EmailClient } = require("@azure/communication-email");
       const fs = require("fs");
       const path = require("path");
-      const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
+      const connectionString =
+        process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
       if (!connectionString) {
-        throw new Error("AZURE_COMMUNICATION_CONNECTION_STRING is not set in environment variables.");
+        throw new Error(
+          "AZURE_COMMUNICATION_CONNECTION_STRING is not set in environment variables."
+        );
       }
       const emailClient = new EmailClient(connectionString);
 
@@ -88,6 +92,7 @@ async function sendWhatsAppReminders() {
         console.log(
           `Email sent to ${employee.email} for follow-up at ${nextConv.date}`
         );
+        followupSent = true;
       } else {
         console.error(
           `Failed to send email to ${employee.email}:`,
@@ -114,11 +119,18 @@ async function sendWhatsAppReminders() {
       const resp = await fetch(apiUrl);
       const respText = await resp.text();
       console.log(`WhatsApp API response for ${employee.phone}:`, respText);
+      followupSent = true;
     } catch (werr) {
       console.error(
         "Error sending WhatsApp message via bulkwhatsapp.net:",
         werr
       );
+    }
+
+    // Update FollowUpSent flag in conversationHistory if alert was sent
+    if (followupSent) {
+      nextConv.FollowUpSent = true;
+      await candidate.save();
     }
     // Optionally, still send to candidate as before
     // await client.messages.create({

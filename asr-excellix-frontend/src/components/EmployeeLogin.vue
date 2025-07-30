@@ -3,13 +3,11 @@
     <div class="login-center">
       <div class="login-card">
         <img
-          src="/vite.svg"
+          src="../assets/images/logo-transparent.png"
           alt="Logo"
           class="login-logo"
-          @click="$router.push('/dashboard')"
-          style="cursor: pointer"
         />
-        <h1 class="login-title">Login</h1>
+
         <p class="login-subtitle">Welcome back! Please enter your details.</p>
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="input-group">
@@ -35,7 +33,9 @@
             />
           </div>
           <div class="login-forgot">
-            <a href="#" class="forgot-link">Forgot password?</a>
+            <a href="#" class="forgot-link" @click.prevent="showForgot = true"
+              >Forgot password?</a
+            >
           </div>
           <button class="login-btn" :disabled="loading">
             <span v-if="loading">Logging in...</span>
@@ -43,6 +43,35 @@
           </button>
           <div v-if="error" class="error-msg">{{ error }}</div>
         </form>
+        <div v-if="showForgot" class="forgot-modal">
+          <div class="forgot-content">
+            <h4>Forgot Password</h4>
+            <input
+              v-model="forgotEmail"
+              type="email"
+              placeholder="Enter your email"
+              class="login-input"
+            />
+            <button
+              class="login-btn"
+              @click="handleForgot"
+              :disabled="forgotLoading"
+            >
+              <span v-if="forgotLoading">Sending...</span>
+              <span v-else>Send Reset Link</span>
+            </button>
+            <div
+              v-if="forgotMsg"
+              :class="{
+                'success-msg': forgotSuccess,
+                'error-msg': !forgotSuccess,
+              }"
+            >
+              {{ forgotMsg }}
+            </div>
+            <button class="close-btn" @click="showForgot = false">Close</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -50,6 +79,7 @@
 
 <script>
 import axios from "axios";
+import { setLoggedIn } from "../auth.js";
 export default {
   name: "EmployeeLogin",
   data() {
@@ -58,6 +88,11 @@ export default {
       password: "",
       loading: false,
       error: "",
+      showForgot: false,
+      forgotEmail: "",
+      forgotMsg: "",
+      forgotSuccess: false,
+      forgotLoading: false,
     };
   },
   methods: {
@@ -71,11 +106,30 @@ export default {
         });
         // Save employee info to localStorage or state
         localStorage.setItem("employee", JSON.stringify(res.data.employee));
+        setLoggedIn(true);
         this.$router.push("/dashboard");
       } catch (err) {
         this.error = err.response?.data?.message || "Login failed.";
       } finally {
         this.loading = false;
+      }
+    },
+    async handleForgot() {
+      this.forgotMsg = "";
+      this.forgotSuccess = false;
+      this.forgotLoading = true;
+      try {
+        await axios.post("/api/employees/forgot-password", {
+          email: this.forgotEmail,
+        });
+        this.forgotMsg = "Password reset email sent. Please check your inbox.";
+        this.forgotSuccess = true;
+      } catch (err) {
+        this.forgotMsg =
+          err.response?.data?.message || "Failed to send reset email.";
+        this.forgotSuccess = false;
+      } finally {
+        this.forgotLoading = false;
       }
     },
   },
@@ -86,7 +140,7 @@ export default {
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 .login-bg {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f6fa 0%, #e9eafc 100%);
+  /* background: linear-gradient(180deg, #f5f6fa 0%, #e9eafc 100%); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,8 +164,7 @@ export default {
   align-items: center;
 }
 .login-logo {
-  width: 60px;
-  height: 60px;
+  max-width: 150px;
   margin-bottom: 1.5rem;
 }
 .login-title {
@@ -124,7 +177,7 @@ export default {
 }
 .login-subtitle {
   font-size: 1.13rem;
-  color: #6b7280;
+  color: #3730a3;
   margin-bottom: 2.2rem;
   text-align: center;
   font-weight: 400;
@@ -189,11 +242,43 @@ export default {
   background: #a5b4fc;
   cursor: not-allowed;
 }
+.forgot-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.forgot-content {
+  background: #1b1e1b;
+  border-radius: 12px;
+  padding: 2em 2em 1.5em 2em;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(55, 48, 163, 0.13);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.close-btn {
+  margin-top: 1em;
+  background: #eee;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3em 0.7em;
+  cursor: pointer;
+}
+.success-msg {
+  color: #16a34a;
+  margin-top: 0.5em;
+}
 .error-msg {
   color: #dc2626;
-  margin-top: 1.2rem;
-  text-align: center;
-  font-size: 1.05rem;
-  font-weight: 600;
+  margin-top: 0.5em;
 }
 </style>
