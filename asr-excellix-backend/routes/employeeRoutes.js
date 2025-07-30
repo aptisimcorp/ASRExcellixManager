@@ -2,12 +2,60 @@ const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
 
-// ➕ Create Employee
+// ➕ Create Employee (with random password, send email)
+const bcrypt = require("bcryptjs");
+const { EmailClient } = require("@azure/communication-email");
+const fs = require("fs");
+const path = require("path");
+
 router.post("/", async (req, res) => {
   try {
-    const employee = new Employee(req.body);
+    const { name, phone, email, address, qualification, dateOfJoining, role } =
+      req.body;
+    // Generate random password
+    const randomPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+    const employee = new Employee({
+      name,
+      phone,
+      email,
+      address,
+      qualification,
+      dateOfJoining,
+      password: hashedPassword,
+      role: role || "employee",
+    });
     await employee.save();
-    res.status(201).json(employee);
+
+    // Send user creation email using employeeRegistrationTemplate.html
+    const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
+    const emailClient = new EmailClient(connectionString);
+    const templatePath = path.join(
+      __dirname,
+      "../employeeRegistrationTemplate.html"
+    );
+    let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    htmlTemplate = htmlTemplate
+      .replace(/{{name}}/g, name)
+      .replace(/{{email}}/g, email)
+      .replace(/{{password}}/g, randomPassword);
+
+    const emailMessage = {
+      senderAddress:
+        "DoNotReply@5086a98d-0c75-4bc7-8628-2e2cf90dca53.azurecomm.net",
+      content: {
+        subject: "ASR Excellix: Your Employee Account Created",
+        plainText: `Your account has been created.\nEmail: ${email}\nPassword: ${randomPassword}`,
+        html: htmlTemplate,
+      },
+      recipients: {
+        to: [{ address: email }],
+      },
+    };
+    await emailClient.beginSend(emailMessage);
+
+    res.status(201).json({ ...employee.toObject(), password: undefined });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

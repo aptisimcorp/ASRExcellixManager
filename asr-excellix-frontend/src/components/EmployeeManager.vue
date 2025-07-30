@@ -172,16 +172,20 @@ onMounted(fetchEmployees);
           </td>
           <td>
             <button
-              class="btn btn-sm btn-warning me-1"
+              class="btn btn-link p-0 me-2"
+              title="Edit"
               @click="editEmployee(emp)"
+              style="color: #ffc107"
             >
-              Edit
+              <i class="bi bi-pencil-square fs-5"></i>
             </button>
             <button
-              class="btn btn-sm btn-danger"
+              class="btn btn-link p-0"
+              title="Delete"
               @click="deleteEmployee(emp._id)"
+              style="color: #dc3545"
             >
-              Delete
+              <i class="bi bi-trash fs-5"></i>
             </button>
           </td>
         </tr>

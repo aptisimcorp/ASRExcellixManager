@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Welcome to ASR Excellix</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f5f6fa;
+        color: #222;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        background: #fff;
+        max-width: 480px;
+        margin: 40px auto;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(55, 48, 163, 0.13);
+        padding: 2.5em 2em;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto 1.5em auto;
+        height: 60px;
+      }
+      .title {
+        color: #3730a3;
+        font-size: 1.5em;
+        font-weight: 700;
+        margin-bottom: 0.5em;
+        text-align: center;
+      }
+      .subtitle {
+        color: #555;
+        font-size: 1.1em;
+        margin-bottom: 1.5em;
+        text-align: center;
+      }
+      .info {
+        background: #f5f6fa;
+        border-radius: 8px;
+        padding: 1em;
+        margin-bottom: 1.5em;
+      }
+      .footer {
+        color: #888;
+        font-size: 0.95em;
+        text-align: center;
+        margin-top: 2em;
+      }
+      .btn {
+        display: inline-block;
+        background: #3730a3;
+        color: #fff;
+        padding: 0.7em 1.5em;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img
+        src="https://i.postimg.cc/rsxHNL08/logo-transparent.png"
+        alt="ASR Excellix Logo"
+        class="logo"
+      />
+      <div class="title">Welcome to ASR Excellix</div>
+      <div class="subtitle">Hi {{name}},</div>
+      <div class="info">
+        <div>Your employee account has been created successfully.</div>
+        <div style="margin-top: 1em"><b>Email:</b> {{email}}</div>
+        <div>
+          <b>Password:</b> <span style="color: #2563eb">{{password}}</span>
+        </div>
+        <div style="margin-top: 1em">
+          Please log in and change your password after your first login for
+          security.
+        </div>
+      </div>
+      <div class="footer">
+        If you have any questions, please contact support.<br />Thank you,<br />ASR
+        Excellix Team
+      </div>
+    </div>
+  </body>
+</html>

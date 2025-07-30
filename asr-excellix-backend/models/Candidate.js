@@ -4,6 +4,7 @@ const conversationSchema = new mongoose.Schema({
   employeeName: { type: String, required: true },
   discussion: { type: String },
   date: { type: Date, default: Date.now },
+  FollowUpSent: { type: Boolean, default: false },
 });
 
 const candidateSchema = new mongoose.Schema({
