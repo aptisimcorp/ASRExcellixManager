@@ -14,9 +14,7 @@ const form = ref({
 });
 
 const fetchEmployees = async () => {
-  const res = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL.replace("/api", "")}/api/employees`
-  );
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/employees`);
   employees.value = await res.json();
   editingId.value = null;
   form.value = {
@@ -32,9 +30,7 @@ const fetchEmployees = async () => {
 const saveEmployee = async () => {
   if (editingId.value) {
     await fetch(
-      `${import.meta.env.VITE_API_BASE_URL.replace("/api", "")}/api/employees/${
-        editingId.value
-      }`,
+      `${import.meta.env.VITE_API_BASE_URL}/employees/${editingId.value}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -42,14 +38,11 @@ const saveEmployee = async () => {
       }
     );
   } else {
-    await fetch(
-      `${import.meta.env.VITE_API_BASE_URL.replace("/api", "")}/api/employees`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form.value),
-      }
-    );
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/employees`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form.value),
+    });
   }
   await fetchEmployees();
   showAdd.value = false;
@@ -65,13 +58,9 @@ const editEmployee = (emp) => {
 };
 
 const deleteEmployee = async (id) => {
-  await fetch(
-    `${import.meta.env.VITE_API_BASE_URL.replace(
-      "/api",
-      ""
-    )}/api/employees/${id}`,
-    { method: "DELETE" }
-  );
+  await fetch(`${import.meta.env.VITE_API_BASE_URL}/employees/${id}`, {
+    method: "DELETE",
+  });
   await fetchEmployees();
 };
 
