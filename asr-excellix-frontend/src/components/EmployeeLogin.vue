@@ -101,7 +101,7 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const res = await axios.post(`${API_BASE}/login`, {
+        const res = await axios.post(`${API_BASE}/employees/login`, {
           email: this.email,
           password: this.password,
         });
@@ -120,7 +120,7 @@ export default {
       this.forgotSuccess = false;
       this.forgotLoading = true;
       try {
-        await axios.post(`${API_BASE}/forgot-password`, {
+        await axios.post(`${API_BASE}/employees/forgot-password`, {
           email: this.forgotEmail,
         });
         this.forgotMsg = "Password reset email sent. Please check your inbox.";
