@@ -1,3 +1,14 @@
+// EmailErrorLog model for saving email errors
+const mongoose = require("mongoose");
+const emailErrorLogSchema = new mongoose.Schema({
+  route: String,
+  email: String,
+  error: String,
+  createdAt: { type: Date, default: Date.now },
+});
+const EmailErrorLog =
+  mongoose.models.EmailErrorLog ||
+  mongoose.model("EmailErrorLog", emailErrorLogSchema);
 const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
@@ -61,31 +72,46 @@ router.post("/forgot-password", async (req, res) => {
   await employee.save();
 
   // Send email with new password
-  const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
-  const emailClient = new EmailClient(connectionString);
-  const templatePath = path.join(__dirname, "../forgotPasswordTemplate.html");
+  try {
+    const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING;
+    const emailClient = new EmailClient(connectionString);
+    const templatePath = path.join(__dirname, "../forgotPasswordTemplate.html");
 
-  let htmlTemplate = fs.readFileSync(templatePath, "utf8");
-  htmlTemplate = htmlTemplate
-    .replace(/{{name}}/g, employee.name)
-    .replace(/{{email}}/g, employee.email)
-    .replace(/{{newPassword}}/g, newPassword);
+    let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    htmlTemplate = htmlTemplate
+      .replace(/{{name}}/g, employee.name)
+      .replace(/{{email}}/g, employee.email)
+      .replace(/{{newPassword}}/g, newPassword);
 
-  const emailMessage = {
-    senderAddress:
-      "DoNotReply@5086a98d-0c75-4bc7-8628-2e2cf90dca53.azurecomm.net",
-    content: {
-      subject: "ASR Excellix: Password Reset",
-      plainText: `Your password has been reset.\nEmail: ${email}\nNew Password: ${newPassword}`,
-      html: htmlTemplate,
-    },
-    recipients: {
-      to: [{ address: email }],
-    },
-  };
-  await emailClient.beginSend(emailMessage);
-
-  res.json({ message: "Password reset. Please check your email." });
+    const emailMessage = {
+      senderAddress:
+        "DoNotReply@5086a98d-0c75-4bc7-8628-2e2cf90dca53.azurecomm.net",
+      content: {
+        subject: "ASR Excellix: Password Reset",
+        plainText: `Your password has been reset.\nEmail: ${email}\nNew Password: ${newPassword}`,
+        html: htmlTemplate,
+      },
+      recipients: {
+        to: [{ address: email }],
+      },
+    };
+    await emailClient.beginSend(emailMessage);
+    res.json({ message: "Password reset. Please check your email." });
+  } catch (err) {
+    console.error("Forgot password email error:", err);
+    // Save error to MongoDB
+    await EmailErrorLog.create({
+      route: "/api/employees/forgot-password",
+      email,
+      error: err.message || err.toString(),
+    });
+    res
+      .status(500)
+      .json({
+        message: "Failed to send reset email.",
+        error: err.message || err.toString(),
+      });
+  }
 });
 
 module.exports = router;
