@@ -105,12 +105,10 @@ router.post("/forgot-password", async (req, res) => {
       email,
       error: err.message || err.toString(),
     });
-    res
-      .status(500)
-      .json({
-        message: "Failed to send reset email.",
-        error: err.message || err.toString(),
-      });
+    res.status(500).json({
+      message: "Failed to send reset email.",
+      error: err.message || err.toString(),
+    });
   }
 });
 
