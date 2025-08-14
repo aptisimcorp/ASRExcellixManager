@@ -79,6 +79,17 @@ router.post("/:id/conversations", async (req, res) => {
     const candidate = await Candidate.findById(req.params.id);
     if (!candidate)
       return res.status(404).json({ error: "Candidate not found" });
+    // Convert date to IST only if timezone is not present
+    if (req.body.date) {
+      const dateStr = req.body.date.toString();
+      // If date string contains timezone info (e.g. +05:30 or Z), do not add offset
+      if (!dateStr.match(/([Zz]|[+-]\d{2}:?\d{2})$/)) {
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        req.body.date = new Date(new Date(req.body.date).getTime() + istOffset);
+      } else {
+        req.body.date = new Date(req.body.date);
+      }
+    }
     candidate.conversationHistory.push(req.body);
     await candidate.save();
     res.status(201).json(candidate.conversationHistory);
@@ -97,7 +108,15 @@ router.put("/:id/conversations/:convId", async (req, res) => {
     if (!conv) return res.status(404).json({ error: "Conversation not found" });
     conv.employeeName = req.body.employeeName;
     conv.discussion = req.body.discussion;
-    conv.date = req.body.date || conv.date;
+    if (req.body.date) {
+      const dateStr = req.body.date.toString();
+      if (!dateStr.match(/([Zz]|[+-]\d{2}:?\d{2})$/)) {
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        conv.date = new Date(new Date(req.body.date).getTime() + istOffset);
+      } else {
+        conv.date = new Date(req.body.date);
+      }
+    }
     await candidate.save();
     res.json(conv);
   } catch (err) {
