@@ -2,6 +2,26 @@ const express = require("express");
 const router = express.Router();
 const Candidate = require("../models/Candidate");
 
+// Convert date to IST ISO string
+function toISTISOString(date) {
+  const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+  const pad = (n) => (n < 10 ? "0" + n : n);
+  return (
+    istDate.getFullYear() +
+    "-" +
+    pad(istDate.getMonth() + 1) +
+    "-" +
+    pad(istDate.getDate()) +
+    "T" +
+    pad(istDate.getHours()) +
+    ":" +
+    pad(istDate.getMinutes()) +
+    ":" +
+    pad(istDate.getSeconds()) +
+    "+05:30"
+  );
+}
+
 // ✅ Mark Candidate as Complete/Closed
 router.patch("/:id/complete", async (req, res) => {
   try {
@@ -79,16 +99,9 @@ router.post("/:id/conversations", async (req, res) => {
     const candidate = await Candidate.findById(req.params.id);
     if (!candidate)
       return res.status(404).json({ error: "Candidate not found" });
-    // Convert date to IST only if timezone is not present
+    // Convert date to IST ISO string before saving
     if (req.body.date) {
-      const dateStr = req.body.date.toString();
-      // If date string contains timezone info (e.g. +05:30 or Z), do not add offset
-      if (!dateStr.match(/([Zz]|[+-]\d{2}:?\d{2})$/)) {
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        req.body.date = new Date(new Date(req.body.date).getTime() + istOffset);
-      } else {
-        req.body.date = new Date(req.body.date);
-      }
+      req.body.date = toISTISOString(new Date(req.body.date));
     }
     candidate.conversationHistory.push(req.body);
     await candidate.save();
@@ -109,13 +122,7 @@ router.put("/:id/conversations/:convId", async (req, res) => {
     conv.employeeName = req.body.employeeName;
     conv.discussion = req.body.discussion;
     if (req.body.date) {
-      const dateStr = req.body.date.toString();
-      if (!dateStr.match(/([Zz]|[+-]\d{2}:?\d{2})$/)) {
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        conv.date = new Date(new Date(req.body.date).getTime() + istOffset);
-      } else {
-        conv.date = new Date(req.body.date);
-      }
+      conv.date = toISTISOString(new Date(req.body.date));
     }
     await candidate.save();
     res.json(conv);
