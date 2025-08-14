@@ -8,4 +8,12 @@ cron.schedule("* * * * *", () => {
     new Date().toLocaleString()
   );
   sendWhatsAppReminders();
+  (async () => {
+    try {
+      await fetch(`${process.env.API_BASE_URL}/api/candidates/wakeup`);
+      console.log("Wakeup API call succeeded");
+    } catch (err) {
+      console.error("Wakeup API call failed:", err);
+    }
+  })();
 });
