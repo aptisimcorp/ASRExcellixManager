@@ -212,15 +212,11 @@ module.exports = function startFollowupScheduler() {
   // setInterval(sendWhatsAppReminders, 15 * 60 * 1000);
 
   // Call wakeup API asynchronously to keep instance alive
-  (async () => {
-    try {
-      await fetch(
-        `${
-          process.env.API_BASE_URL || "http://localhost:3000"
-        }/api/candidates/wakeup`
-      );
-    } catch (err) {
-      console.error("Wakeup API call failed:", err);
-    }
-  })();
+  // (async () => {
+  //   try {
+  //     await fetch(`${process.env.API_BASE_URL}/api/candidates/wakeup`);
+  //   } catch (err) {
+  //     console.error("Wakeup API call failed:", err);
+  //   }
+  // })();
 };
