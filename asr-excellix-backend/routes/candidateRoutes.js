@@ -3,15 +3,7 @@ const router = express.Router();
 const Candidate = require("../models/Candidate");
 
 const mongoose = require("mongoose");
-
-// WakeupLog model (top-level, not inside route)
-const WakeupLog = mongoose.model(
-  "WakeupLog",
-  new mongoose.Schema({
-    message: String,
-    timestamp: { type: Date, default: Date.now },
-  })
-);
+const WakeupLog = require("./models/WakeupLog");
 
 // Convert date to IST ISO string
 function toISTISOString(date) {
