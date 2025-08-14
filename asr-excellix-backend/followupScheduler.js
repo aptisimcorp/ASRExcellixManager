@@ -27,19 +27,24 @@ const fetch = (...args) =>
 
 async function sendWhatsAppReminders() {
   const now = new Date();
-  const in15 = new Date(now.getTime() + 15 * 60000);
+
+  // Get current IST time
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const nowIST = new Date(now.getTime() + istOffset);
+  const in15IST = new Date(nowIST.getTime() + 15 * 60000);
   const candidates = await Candidate.find({
     conversationHistory: {
       $elemMatch: {
-        date: { $gte: now, $lte: in15 },
+        date: { $gte: nowIST, $lte: in15IST },
       },
     },
   });
 
   for (const candidate of candidates) {
-    const nextConv = candidate.conversationHistory.find(
-      (c) => c.date >= now && c.date <= in15 && !c.FollowUpSent
-    );
+    const nextConv = candidate.conversationHistory.find((c) => {
+      const convDateIST = new Date(new Date(c.date).getTime() + istOffset);
+      return convDateIST >= nowIST && convDateIST <= in15IST && !c.FollowUpSent;
+    });
     if (!nextConv) continue;
 
     // Find the employee by name
@@ -75,21 +80,20 @@ async function sendWhatsAppReminders() {
       // Read and fill the HTML template
       const templatePath = path.join(__dirname, "emailTemplate.html");
       let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+      // Format followUpDate in IST
+      const followUpDateIST = new Date(
+        new Date(nextConv.date).getTime() + istOffset
+      ).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
       htmlTemplate = htmlTemplate
         .replace(/{{candidateName}}/g, candidate.name)
         .replace(/{{candidatePhone}}/g, candidate.phone)
-        .replace(/{{followUpDate}}/g, new Date(nextConv.date).toLocaleString());
-
+        .replace(/{{followUpDate}}/g, followUpDateIST);
       const emailMessage = {
         senderAddress:
           "DoNotReply@5086a98d-0c75-4bc7-8628-2e2cf90dca53.azurecomm.net",
         content: {
           subject: "Alert: Follow Up",
-          plainText: `Alert: Follow-up call with ${candidate.name} (${
-            candidate.phone
-          }) is scheduled on ${new Date(
-            nextConv.date
-          ).toLocaleString()}. Please take appropriate action.\n\nTeam ASR Excellix`,
+          plainText: `Alert: Follow-up call with ${candidate.name} (${candidate.phone}) is scheduled on ${followUpDateIST}. Please take appropriate action.\n\nTeam ASR Excellix`,
           html: htmlTemplate,
         },
         recipients: {
@@ -147,11 +151,7 @@ async function sendWhatsAppReminders() {
     try {
       const employeeMobile = employee.phone.replace(/^\+?91/, ""); // Remove +91 if present
       const followUpMsg = encodeURIComponent(
-        `Alert: Follow-up call with ${candidate.name} (${
-          candidate.phone
-        }) is scheduled on ${new Date(
-          nextConv.date
-        ).toLocaleString()}. Please take appropriate action.\n\nTeam ASR Excellix`
+        `Alert: Follow-up call with ${candidate.name} (${candidate.phone}) is scheduled on ${followUpDateIST}. Please take appropriate action.\n\nTeam ASR Excellix`
       );
       const apiUrl = `https://api.bulkwhatsapp.net/wapp/api/send?apikey=e1b31e8d433c42eebe3d9229a911e981&mobile=91${employeeMobile}&msg=${followUpMsg}`;
       const resp = await fetch(apiUrl);
