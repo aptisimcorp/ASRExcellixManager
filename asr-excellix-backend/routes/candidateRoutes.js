@@ -3,7 +3,7 @@ const router = express.Router();
 const Candidate = require("../models/Candidate");
 
 const mongoose = require("mongoose");
-const WakeupLog = require("./models/WakeupLog");
+const WakeupLog = require("../models/WakeupLog");
 
 // Convert date to IST ISO string
 function toISTISOString(date) {
