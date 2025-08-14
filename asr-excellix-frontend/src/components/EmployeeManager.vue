@@ -11,6 +11,7 @@ const form = ref({
   address: "",
   qualification: "",
   dateOfJoining: "",
+  role: "employee",
 });
 
 const fetchEmployees = async () => {
@@ -24,6 +25,7 @@ const fetchEmployees = async () => {
     address: "",
     qualification: "",
     dateOfJoining: "",
+    role: "employee",
   };
 };
 
@@ -53,6 +55,7 @@ const editEmployee = (emp) => {
   form.value = {
     ...emp,
     dateOfJoining: emp.dateOfJoining ? emp.dateOfJoining.substring(0, 10) : "",
+    role: emp.role || "employee",
   };
   showAdd.value = true;
 };
@@ -124,6 +127,12 @@ onMounted(fetchEmployees);
           placeholder="Date of Joining"
         />
       </div>
+      <div class="col-md-2">
+        <select v-model="form.role" class="form-select" required>
+          <option value="employee">Employee</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
       <div class="col-md-12 mt-2">
         <button class="btn btn-success me-2" type="submit">
           {{ editingId ? "Update" : "Add" }}
@@ -146,6 +155,7 @@ onMounted(fetchEmployees);
           <th>Address</th>
           <th>Qualification</th>
           <th>Date of Joining</th>
+          <th>Role</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -158,6 +168,9 @@ onMounted(fetchEmployees);
           <td>{{ emp.qualification }}</td>
           <td>
             {{ emp.dateOfJoining ? emp.dateOfJoining.substring(0, 10) : "" }}
+          </td>
+          <td>
+            {{ emp.role === "admin" ? "Admin" : "Employee" }}
           </td>
           <td>
             <button

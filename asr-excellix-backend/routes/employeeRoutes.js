@@ -71,7 +71,25 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 📄 Get One Employee
+// � Update Employee Role Only
+router.patch("/:id/role", async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!["employee", "admin"].includes(role)) {
+      return res.status(400).json({ error: "Invalid role value" });
+    }
+    const updated = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// �📄 Get One Employee
 router.get("/:id", async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
@@ -112,6 +130,24 @@ router.get("/names/all", async (req, res) => {
     res.json(employees.map((e) => e.name));
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// 🔄 Update Employee Role Only
+router.patch("/:id/role", async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!["employee", "admin"].includes(role)) {
+      return res.status(400).json({ error: "Invalid role value" });
+    }
+    const updated = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

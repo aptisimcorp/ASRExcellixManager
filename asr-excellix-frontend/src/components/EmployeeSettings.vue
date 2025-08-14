@@ -77,7 +77,8 @@ export default {
       this.pwMsg = "";
       this.pwSuccess = false;
       try {
-        await axios.post("/api/employees/change-password", {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL;
+        await axios.post(`${API_BASE}/employees/change-password`, {
           email: this.employee.email,
           oldPassword: this.oldPassword,
           newPassword: this.newPassword,
