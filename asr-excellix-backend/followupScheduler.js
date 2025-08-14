@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Candidate = require("./models/Candidate");
 const Employee = require("./models/Employee");
+const EmailLog = require("./models/EmailLog");
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
@@ -47,6 +48,16 @@ async function sendWhatsAppReminders() {
     const toEmail = `whatsapp:${normalizePhone(employee.email)}`;
 
     let followupSent = false;
+    // Log attempt to send email
+    await EmailLog.create({
+      candidateName: candidate.name,
+      candidatePhone: candidate.phone,
+      employeeName: employee.name,
+      employeeEmail: employee.email,
+      followUpDate: nextConv.date,
+      status: "attempt",
+      error: "",
+    });
     // Send email using Azure Communication Services with external HTML template
     try {
       const { EmailClient } = require("@azure/communication-email");
@@ -93,17 +104,44 @@ async function sendWhatsAppReminders() {
           `Email sent to ${employee.email} for follow-up at ${nextConv.date}`
         );
         followupSent = true;
+        await EmailLog.create({
+          candidateName: candidate.name,
+          candidatePhone: candidate.phone,
+          employeeName: employee.name,
+          employeeEmail: employee.email,
+          followUpDate: nextConv.date,
+          status: "sent",
+          error: "",
+        });
       } else {
         console.error(
           `Failed to send email to ${employee.email}:`,
           result.error
         );
+        await EmailLog.create({
+          candidateName: candidate.name,
+          candidatePhone: candidate.phone,
+          employeeName: employee.name,
+          employeeEmail: employee.email,
+          followUpDate: nextConv.date,
+          status: "error",
+          error: result.error ? JSON.stringify(result.error) : "Unknown error",
+        });
       }
     } catch (err) {
       console.error(
         "Error sending email via Azure Communication Services:",
         err
       );
+      await EmailLog.create({
+        candidateName: candidate.name,
+        candidatePhone: candidate.phone,
+        employeeName: employee.name,
+        employeeEmail: employee.email,
+        followUpDate: nextConv.date,
+        status: "error",
+        error: err.message || JSON.stringify(err),
+      });
     }
     // Send WhatsApp message via bulkwhatsapp.net API (outside email try/catch)
     try {
