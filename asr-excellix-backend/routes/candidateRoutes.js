@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Candidate = require("../models/Candidate");
+const mongoose = require("mongoose");
 
 // Convert date to IST ISO string
 function toISTISOString(date) {
@@ -162,6 +163,23 @@ router.get("/followups/today", async (req, res) => {
       (a, b) => new Date(a.nextFollowup) - new Date(b.nextFollowup)
     );
     res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 🕒 Wakeup API for scheduler keep-alive
+router.get("/wakeup", async (req, res) => {
+  try {
+    const WakeupLog = mongoose.model(
+      "WakeupLog",
+      new mongoose.Schema({
+        message: String,
+        timestamp: { type: Date, default: Date.now },
+      })
+    );
+    await WakeupLog.create({ message: "I am alive", timestamp: new Date() });
+    res.json({ status: "alive", time: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
