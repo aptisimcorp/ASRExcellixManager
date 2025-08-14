@@ -1,7 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const Candidate = require("../models/Candidate");
+
 const mongoose = require("mongoose");
+
+// WakeupLog model (top-level, not inside route)
+const WakeupLog = mongoose.model(
+  "WakeupLog",
+  new mongoose.Schema({
+    message: String,
+    timestamp: { type: Date, default: Date.now },
+  })
+);
 
 // Convert date to IST ISO string
 function toISTISOString(date) {
@@ -171,13 +181,6 @@ router.get("/followups/today", async (req, res) => {
 // 🕒 Wakeup API for scheduler keep-alive
 router.get("/wakeup", async (req, res) => {
   try {
-    const WakeupLog = mongoose.model(
-      "WakeupLog",
-      new mongoose.Schema({
-        message: String,
-        timestamp: { type: Date, default: Date.now },
-      })
-    );
     await WakeupLog.create({ message: "I am alive", timestamp: new Date() });
     res.json({ status: "alive", time: new Date().toISOString() });
   } catch (err) {
