@@ -170,14 +170,4 @@ router.get("/followups/today", async (req, res) => {
   }
 });
 
-// 🕒 Wakeup API for scheduler keep-alive
-router.get("/wakeup", async (req, res) => {
-  try {
-    await WakeupLog.create({ message: "I am alive", timestamp: new Date() });
-    res.json({ status: "alive", time: new Date().toISOString() });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 module.exports = router;
