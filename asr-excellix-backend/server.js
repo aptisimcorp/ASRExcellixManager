@@ -11,6 +11,7 @@ require("dotenv").config();
 const candidateRoutes = require("./routes/candidateRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const employeeAuthRoutes = require("./routes/employeeAuth");
+const wakeupRoutes = require("./routes/wakeupRoutes");
 require("./scheduler"); // Start the scheduler with logging
 
 const app = express();
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use("/api/candidates", candidateRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/employees", employeeAuthRoutes);
+app.use("/api/wakeup", wakeupRoutes);
 
 // MongoDB Connection
 mongoose
