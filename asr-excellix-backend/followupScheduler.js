@@ -25,12 +25,10 @@ mongoose.connect(process.env.MONGO_URI, {
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-async function sendWhatsAppReminders() {
-  const now = new Date();
+const { getISTDate, toISTISOString } = require("./utils/date");
 
-  // Get current IST time
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const nowIST = new Date(now.getTime() + istOffset);
+async function sendWhatsAppReminders() {
+  const nowIST = getISTDate();
   const in15IST = new Date(nowIST.getTime() + 15 * 60000);
   const candidates = await Candidate.find({
     conversationHistory: {
@@ -42,7 +40,7 @@ async function sendWhatsAppReminders() {
 
   for (const candidate of candidates) {
     const nextConv = candidate.conversationHistory.find((c) => {
-      const convDateIST = new Date(new Date(c.date).getTime() + istOffset);
+      const convDateIST = getISTDate(new Date(c.date));
       return convDateIST >= nowIST && convDateIST <= in15IST && !c.FollowUpSent;
     });
     if (!nextConv) continue;
@@ -81,9 +79,7 @@ async function sendWhatsAppReminders() {
       const templatePath = path.join(__dirname, "emailTemplate.html");
       let htmlTemplate = fs.readFileSync(templatePath, "utf8");
       // Format followUpDate in IST
-      const followUpDateIST = new Date(
-        new Date(nextConv.date).getTime() + istOffset
-      ).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+      const followUpDateIST = toISTISOString(new Date(nextConv.date));
       htmlTemplate = htmlTemplate
         .replace(/{{candidateName}}/g, candidate.name)
         .replace(/{{candidatePhone}}/g, candidate.phone)

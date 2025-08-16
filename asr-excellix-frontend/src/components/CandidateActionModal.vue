@@ -16,7 +16,11 @@ const fetchConversations = async () => {
       props.candidate._id
     }/conversations`
   );
-  conversationHistory.value = await res.json();
+  const data = await res.json();
+  // Sort by date descending (latest first)
+  conversationHistory.value = Array.isArray(data)
+    ? data.slice().sort((a, b) => new Date(b.date) - new Date(a.date))
+    : [];
 };
 
 const fetchEmployeeNames = async () => {
@@ -109,7 +113,7 @@ const saveConversation = async () => {
             </thead>
             <tbody>
               <tr v-for="conv in conversationHistory" :key="conv._id">
-                <td>{{ new Date(conv.date).toLocaleString() }}</td>
+                <td>{{ conv.date }}</td>
                 <td>{{ conv.employeeName }}</td>
                 <td>{{ conv.discussion }}</td>
               </tr>
